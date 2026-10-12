@@ -16,7 +16,7 @@ resource "aws_db_instance" "MySQL" {
   username                = var.db_user
   db_name                 = "inquiries"
   vpc_security_group_ids  = [aws_security_group.rds_Draco_ro.id]
-  skip_final_snapshot    = true
+  skip_final_snapshot     = true
 
 
   storage_encrypted = true
