@@ -6,7 +6,7 @@ resource "aws_db_subnet_group" "db_group_Drago_ro" {
 
 resource "aws_db_instance" "MySQL" {
   allocated_storage       = 20
-  backup_retention_period = 7
+  backup_retention_period = 1
   db_subnet_group_name    = aws_db_subnet_group.db_group_Drago_ro.id
   engine                  = "mysql"
   engine_version          = "8.0"
