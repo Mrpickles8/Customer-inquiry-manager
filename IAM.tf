@@ -43,7 +43,7 @@ resource "aws_iam_role_policy" "ec2" {
       {
         Effect   = "Allow"
         Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = [aws_kms_key.MySQL.arn]
+        Resource = [aws_kms_key.rds_Draco_ro.arn]
       }
     ]
   })
