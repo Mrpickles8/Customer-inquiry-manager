@@ -17,7 +17,7 @@ resource "aws_iam_role" "ec2_Draco_ro" {
 }
 
 resource "aws_iam_role_policy" "ec2" {
-  role = aws_iam_role.ec2.id
+  role = aws_iam_role.ec2_Draco_ro.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -43,7 +43,7 @@ resource "aws_iam_role_policy" "ec2" {
       {
         Effect   = "Allow"
         Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = [aws_kms_key.rds.arn]
+        Resource = [aws_kms_key.MySQL.arn]
       }
     ]
   })

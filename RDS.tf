@@ -20,7 +20,7 @@ resource "aws_db_instance" "MySQL" {
 
 
   storage_encrypted = true
-  kms_key_id        = aws_kms_key.rds.arn
+  kms_key_id        = aws_kms_key.rds_Draco_ro.arn
 }
 
 resource "aws_kms_key" "rds_Draco_ro" {

@@ -92,7 +92,7 @@ resource "aws_network_acl" "nacl_public_Draco_ro" {
   vpc_id     = aws_vpc.Drago_ro.id
   subnet_ids = [aws_subnet.subnet_public.id]
 
-  ingressgress {
+  ingress {
     protocol   = "tcp"
     rule_no    = 100
     action     = "allow"
@@ -233,8 +233,8 @@ data "aws_ami" "amazon_linux" {
 resource "aws_instance" "app" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.ec2.id]
+  subnet_id              = aws_subnet.subnet_public.id
+  vpc_security_group_ids = [aws_security_group.ec2_Draco_ro.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
   user_data              = <<-EOF
 #!/bin/bash
