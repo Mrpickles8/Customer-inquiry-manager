@@ -32,8 +32,8 @@ resource "aws_iam_role_policy" "ec2" {
         Resource = ["arn:aws:ses:eu-west-1:${data.aws_caller_identity.current.account_id}:identity/${var.sender_email}"]
       },
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
