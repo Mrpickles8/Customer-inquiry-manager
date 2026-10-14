@@ -50,3 +50,9 @@ resource "aws_iam_role_policy" "ec2" {
 }
 
 data "aws_caller_identity" "current" {}
+
+
+data "aws_iam_role_policy_attachment" "ec2_Draco_ro" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}

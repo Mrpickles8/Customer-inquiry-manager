@@ -14,7 +14,7 @@ resource "aws_db_instance" "MySQL" {
   instance_class          = "db.t3.micro"
   password                = var.db_password
   username                = var.db_user
-  db_name                 = "inquiries"
+  db_name                 = "inventory"
   vpc_security_group_ids  = [aws_security_group.rds_Draco_ro.id]
   skip_final_snapshot     = true
 
