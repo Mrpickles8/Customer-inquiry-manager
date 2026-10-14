@@ -273,3 +273,12 @@ python3 /home/ec2-user/app.py &
 EOF
   tags                   = { Name = "${var.project_name}-app" }
 }
+
+
+output "app" {
+  value = "http://${aws_instance.app.public_ip}"
+}
+
+output "db_endpoint" {
+  value = aws_db_instance.MySQL.endpoint
+}
