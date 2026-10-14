@@ -16,7 +16,7 @@ resource "aws_iam_role" "ec2_Draco_ro" {
   })
 }
 
-resource "aws_iam_role_policy" "ec2" {
+resource "aws_iam_role_policy" "ec2_dr_ro" {
   role = aws_iam_role.ec2_Draco_ro.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -52,7 +52,7 @@ resource "aws_iam_role_policy" "ec2" {
 data "aws_caller_identity" "current" {}
 
 
-resource "aws_iam_role_policy_attachment" "ec2_Draco_ro" {
-  role       = aws_iam_role.ec2.name
+resource "aws_iam_role_policy_attachment" "ec2_Draco_ro_ssm" {
+  role       = aws_iam_role.ec2_Draco_ro.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
