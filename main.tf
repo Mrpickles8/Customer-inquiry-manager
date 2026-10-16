@@ -237,41 +237,64 @@ resource "aws_instance" "app" {
   vpc_security_group_ids = [aws_security_group.ec2_Draco_ro.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
   user_data              = <<-EOF
+user_data = <<-EOF
 #!/bin/bash
 yum update -y
 yum install -y python3 python3-pip
 pip3 install flask boto3 pymysql
-# Crée l'application Flask
+
 cat > /home/ec2-user/app.py << 'APPEOF'
-import boto3, json, pymysql
-from flask import Flask, request, jsonify
+import boto3
+import json
+import pymysql
 import os
+from flask import Flask, request, jsonify
+
 app = Flask(__name__)
+
 bedrock = boto3.client('bedrock-runtime', region_name='eu-west-1')
-ses = boto3.client('ses', region_name='eu-west-1')
+ses     = boto3.client('ses', region_name='eu-west-1')
+
 def analyze_inquiry(message):
-response = bedrock.invoke_model(
-modelId='anthropic.claude-3-haiku-20240307-v1:0',
-body=json.dumps({
-'anthropic_version': 'bedrock-2023-05-31',
-'max_tokens': 200,
-'messages': [{'role': 'user', 'content': f'Categorize this customer inquiry in one word
-(BILLING/TECHNICAL/SALES/COMPLAINT/OTHER) and give urgency (LOW/MEDIUM/HIGH): {message}'}]
-})
-)
-return json.loads(response['body'].read())['content'][0]['text']
+    response = bedrock.invoke_model(
+        modelId='anthropic.claude-3-haiku-20240307-v1:0',
+        body=json.dumps({
+            'anthropic_version': 'bedrock-2023-05-31',
+            'max_tokens': 200,
+            'messages': [{
+                'role': 'user',
+                'content': f'Categorize this customer inquiry in one word '
+                           f'(BILLING/TECHNICAL/SALES/COMPLAINT/OTHER) '
+                           f'and give urgency (LOW/MEDIUM/HIGH): {message}'
+            }]
+        })
+    )
+    return json.loads(response['body'].read())['content'][0]['text']
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok'}), 200
+
 @app.route('/inquiry', methods=['POST'])
 def handle_inquiry():
-data = request.json
-analysis = analyze_inquiry(data.get('message', ''))
-# Stocke dans RDS + envoie email via SES
-return jsonify({'status': 'received', 'analysis': analysis})
+    data     = request.json
+    message  = data.get('message', '')
+    analysis = analyze_inquiry(message)
+    return jsonify({
+        'status':   'received',
+        'analysis': analysis
+    })
+
 if __name__ == '__main__':
-app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=80)
 APPEOF
+
 python3 /home/ec2-user/app.py &
 EOF
-  tags                   = { Name = "${var.project_name}-app" }
+}
+
+output "app_public_ip" {
+  value = aws_instance.app.public_ip
 }
 
 
