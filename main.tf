@@ -239,21 +239,36 @@ resource "aws_instance" "app" {
   user_data              = <<-EOF
 user_data = <<-EOF
 #!/bin/bash
-yum update -y
-yum install -y python3 python3-pip
-pip3 install flask boto3 pymysql
 
+# Enregistrer les logs d'initialisation
+exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
+
+set -euxo pipefail
+
+echo "=== Starting EC2 initialization ==="
+
+# 1. Démarrer et activer SSM Agent
+if systemctl list-unit-files | grep -q '^amazon-ssm-agent.service'; then
+  systemctl enable --now amazon-ssm-agent
+else
+  echo "SSM Agent service not found"
+fi
+
+# 2. Installer les dépendances Python
+dnf install -y python3 python3-pip
+
+python3 -m pip install flask boto3 pymysql
+
+# 3. Créer l'application Flask
 cat > /home/ec2-user/app.py << 'APPEOF'
 import boto3
 import json
-import pymysql
-import os
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
 bedrock = boto3.client('bedrock-runtime', region_name='eu-west-1')
-ses     = boto3.client('ses', region_name='eu-west-1')
+ses = boto3.client('ses', region_name='eu-west-1')
 
 def analyze_inquiry(message):
     response = bedrock.invoke_model(
@@ -263,9 +278,12 @@ def analyze_inquiry(message):
             'max_tokens': 200,
             'messages': [{
                 'role': 'user',
-                'content': f'Categorize this customer inquiry in one word '
-                           f'(BILLING/TECHNICAL/SALES/COMPLAINT/OTHER) '
-                           f'and give urgency (LOW/MEDIUM/HIGH): {message}'
+                'content': (
+                    'Categorize this customer inquiry in one word '
+                    '(BILLING/TECHNICAL/SALES/COMPLAINT/OTHER) '
+                    'and give urgency (LOW/MEDIUM/HIGH): '
+                    + message
+                )
             }]
         })
     )
@@ -277,19 +295,71 @@ def health():
 
 @app.route('/inquiry', methods=['POST'])
 def handle_inquiry():
-    data     = request.json
-    message  = data.get('message', '')
-    analysis = analyze_inquiry(message)
-    return jsonify({
-        'status':   'received',
-        'analysis': analysis
-    })
+    data = request.get_json(silent=True) or {}
+    message = data.get('message', '')
+
+    if not isinstance(message, str) or not message.strip():
+        return jsonify({'error': 'A non-empty message is required'}), 400
+
+    try:
+        analysis = analyze_inquiry(message)
+        return jsonify({
+            'status': 'received',
+            'analysis': analysis
+        })
+    except Exception:
+        app.logger.exception("Inquiry analysis failed")
+        return jsonify({'error': 'Analysis failed'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
 APPEOF
 
-python3 /home/ec2-user/app.py &
+# 4. Donner à ec2-user la propriété du fichier
+chown ec2-user:ec2-user /home/ec2-user/app.py
+chmod 644 /home/ec2-user/app.py
+
+# 5. Créer un service systemd pour Flask
+cat > /etc/systemd/system/customer-inquiry.service << 'SERVICEEOF'
+[Unit]
+Description=Customer Inquiry Flask Application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/ec2-user
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /home/ec2-user/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+
+# 6. Activer et démarrer l'application
+systemctl daemon-reload
+systemctl enable --now customer-inquiry.service
+
+# 7. Attendre que Flask réponde localement
+for i in $(seq 1 30); do
+  if curl -fsS --max-time 2 http://127.0.0.1/health; then
+    echo
+    echo "Local health check passed"
+    break
+  fi
+
+  echo "Waiting for Flask startup: attempt $i/30"
+  sleep 2
+done
+
+# 8. Vérifier que le service fonctionne
+systemctl --no-pager --full status customer-inquiry.service
+systemctl --no-pager --full status amazon-ssm-agent || true
+
+echo "=== EC2 initialization finished ==="
 EOF
 }
 
