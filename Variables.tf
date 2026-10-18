@@ -29,11 +29,6 @@ variable "sender_email" {
   sensitive = true
 }
 
-variable "admin_email" {
-  type      = string
-  sensitive = true
-}
-
 variable "instance_type" {
   type    = string
   default = "t3.micro"
