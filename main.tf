@@ -312,7 +312,7 @@ def handle_inquiry():
         return jsonify({'error': 'Analysis failed'}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=8080)
 APPEOF
 
 # 4. Donner à ec2-user la propriété du fichier
