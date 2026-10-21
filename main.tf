@@ -181,6 +181,12 @@ resource "aws_security_group" "ec2_Draco_ro" {
   vpc_id = aws_vpc.Drago_ro.id
 
   ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] 
+
+  ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -247,7 +253,7 @@ set -euxo pipefail
 echo "=== Starting EC2 initialization ==="
 
 # 1. Démarrer et activer SSM Agent
-if systemctl list-unit-files | grep -q '^amazon-ssm-agent.service'; then
+if systemctl list-unit-files | grep -q '^amazon-ssm-agent.service' || true; then
   systemctl enable --now amazon-ssm-agent
 else
   echo "SSM Agent service not found"
