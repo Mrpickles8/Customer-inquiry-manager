@@ -237,7 +237,6 @@ resource "aws_instance" "app" {
   vpc_security_group_ids = [aws_security_group.ec2_Draco_ro.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
   user_data              = <<-EOF
-user_data = <<-EOF
 #!/bin/bash
 
 # Enregistrer les logs d'initialisation
