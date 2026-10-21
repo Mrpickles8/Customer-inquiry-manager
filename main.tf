@@ -229,13 +229,20 @@ resource "aws_iam_instance_profile" "ec2" {
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
+
   filter {
     name   = "name"
-    values = ["al2023-ami-kernel-default-x86_64"]
+    values = ["al2023-ami-2023.*-kernel-6.18-x86_64"]
+  }
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
 }
-
-
 
 resource "aws_instance" "app" {
   ami                    = data.aws_ami.amazon_linux.id
