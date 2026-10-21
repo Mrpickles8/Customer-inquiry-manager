@@ -344,7 +344,7 @@ systemctl enable --now customer-inquiry.service
 
 # 7. Attendre que Flask réponde localement
 for i in $(seq 1 30); do
-  if curl -fsS --max-time 2 http://127.0.0.1/health; then
+  if curl -fsS --max-time 2 http://127.0.0.1:8080/health; then
     echo
     echo "Local health check passed"
     break
