@@ -185,7 +185,7 @@ resource "aws_security_group" "ec2_Draco_ro" {
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-  } 
+  }
 
   ingress {
     from_port   = 80
