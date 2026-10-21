@@ -90,7 +90,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' && github.event_name == 'push'|| inputs.action == 'deploy'
+        if: github.event_name == 'pull_request'
         run: terraform plan -no-color
 
       - name: Setup Infracost
