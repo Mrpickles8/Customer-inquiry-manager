@@ -231,7 +231,7 @@ data "aws_ami" "amazon_linux" {
   owners      = ["amazon"]
   filter {
     name   = "name"
-    values = ["al2023-ami-*-x86_64"]
+    values = ["al2023-ami-kernel-default-x86_64"]
   }
 }
 
@@ -253,17 +253,19 @@ set -euxo pipefail
 
 echo "=== Starting EC2 initialization ==="
 
-# 1. Démarrer et activer SSM Agent
-if systemctl list-unit-files | grep -q '^amazon-ssm-agent.service' || true; then
-  systemctl enable --now amazon-ssm-agent
-else
-  echo "SSM Agent service not found"
-fi
+# 1. Mettre à jour les dépôts et installer explicitement l'agent SSM
+dnf makecache --refresh || true
+dnf install -y amazon-ssm-agent || true
+
+# Démarrer et activer SSM Agent
+systemctl daemon-reload
+systemctl enable amazon-ssm-agent
+systemctl restart amazon-ssm-agent
 
 # 2. Installer les dépendances Python
-dnf install -y python3 python3-pip
-
-python3 -m pip install flask boto3 pymysql
+dnf install -y python3 python3-pip || true
+python3 -m pip install --upgrade pip || true
+python3 -m pip install flask boto3 pymysql || true
 
 # 3. Créer l'application Flask
 cat > /home/ec2-user/app.py << 'APPEOF'
