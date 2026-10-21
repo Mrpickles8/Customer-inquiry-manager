@@ -90,13 +90,14 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' && github.event_name == 'push'|| inputs.action == 'deploy'
         run: terraform plan -no-color
 
       - name: Setup Infracost
         uses: infracost/actions/setup@v3
 
       - name: Infracost Cost Estimation
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' && github.event_name == 'push'|| inputs.action == 'deploy'
         env:
           INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
         run: |
