@@ -71,21 +71,21 @@ resource "aws_security_group" "lb_sg" {
     protocol        = "tcp"
     from_port       = 443
     to_port         = 443
-    security_groups = [aws_security_group.app_sg.id]
+    security_groups = [aws_security_group.ec2_Draco_ro.id]
   }
 
   egress {
     protocol        = "tcp"
     from_port       = 80
     to_port         = 80
-    security_groups = [aws_security_group.app_sg.id]
+    security_groups = [aws_security_group.ec2_Draco_ro.id]
   }
 
   egress {
     protocol        = "tcp"
     from_port       = 8080
     to_port         = 8080
-    security_groups = [aws_security_group.app_sg.id]
+    security_groups = [aws_security_group.ec2_Draco_ro.id]
   }
 
   tags = {
