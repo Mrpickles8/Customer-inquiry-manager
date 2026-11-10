@@ -49,7 +49,7 @@ resource "aws_lb_listener" "https_Draco_ro" {
 }
 
 resource "aws_security_group" "lb_sg" {
-  name        = "sg-alb-Drago-ro"
+  name        = "alb-Drago-ro-sg"
   description = "Security Group for public ALB"
   vpc_id      = aws_vpc.Drago_ro.id
 
