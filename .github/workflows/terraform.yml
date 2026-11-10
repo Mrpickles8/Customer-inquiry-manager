@@ -179,37 +179,23 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Get the SG id
-        run: |
-          echo "SG_ID=$(terraform output -raw security_group_ec2_id )" >> $GITHUB_ENV
-
-      - name: Get the runner ip
-        id: get-ip
-        run: | 
-          RUNNER_IP=$(curl -s https://api.ipify.org)
-          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_OUTPUT
-
-      - name: Open the port 8080 ingress
-        run: |
-          aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8080 --cidr ${{ steps.get-ip.outputs.RUNNER_IP }}/32
-
-
-      # Test 1 : Health check Flask app
+    
+      # Test 1 : Health check Flask through ALB
       - name: Health check Flask app
         continue-on-error: true
         run: |
-          EC2_IP=$(terraform output -raw app_public_ip 2>/dev/null) || true
+          APP_URL=$(terraform output -raw app 2>/dev/null) || true
 
-          if [ -z "$EC2_IP" ]; then
-            echo "Could not get EC2 IP — skipping"
+          if [ -z "$APP_URL" ]; then
+            echo "Could not get ALB URL — skipping"
             exit 0
           fi
 
-          echo "App at: http://$EC2_IP"
+          echo "Testing application at: $APP_URL"
 
           for i in $(seq 1 20); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              "http://$EC2_IP:8080/health" 2>/dev/null) || true
+              "$APP_URL/health" 2>/dev/null) || true
 
             if [ "$STATUS" = "200" ]; then
               echo "Health check passed"
@@ -220,13 +206,8 @@ jobs:
             sleep 30
           done
 
-          echo "Health check failed — app may still be starting"
+          echo "Health check failed"
           exit 1
-
-      - name: Close the port 8080 ingress
-        if: always()
-        run: |
-          aws ec2 revoke-security-group-ingress --group-id $SG_ID --protocol tcp --port 8080 --cidr ${{ steps.get-ip.outputs.RUNNER_IP }}/32
 
 
 

@@ -31,20 +31,31 @@ resource "aws_vpc" "Drago_ro" {
   }
 }
 
-resource "aws_subnet" "subnet_public" {
+resource "aws_subnet" "subnet_public_1" {
   vpc_id                  = aws_vpc.Drago_ro.id
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = "true"
   availability_zone       = "${var.aws_region}a"
 
   tags = {
-    Name = "subnet_public"
+    Name = "subnet_public_1"
+  }
+}
+
+resource "aws_subnet" "subnet_public_2" {
+  vpc_id                  = aws_vpc.Drago_ro.id
+  cidr_block              = "10.0.2.0/24"
+  map_public_ip_on_launch = "true"
+  availability_zone       = "${var.aws_region}b"
+
+  tags = {
+    Name = "subnet_public_2"
   }
 }
 
 resource "aws_subnet" "subnet_prive_1" {
   vpc_id                  = aws_vpc.Drago_ro.id
-  cidr_block              = "10.0.2.0/24"
+  cidr_block              = "10.0.3.0/24"
   map_public_ip_on_launch = "false"
   availability_zone       = "${var.aws_region}a"
 
@@ -55,7 +66,7 @@ resource "aws_subnet" "subnet_prive_1" {
 
 resource "aws_subnet" "subnet_prive_2" {
   vpc_id                  = aws_vpc.Drago_ro.id
-  cidr_block              = "10.0.3.0/24"
+  cidr_block              = "10.0.4.0/24"
   map_public_ip_on_launch = "false"
   availability_zone       = "${var.aws_region}b"
 
@@ -64,6 +75,16 @@ resource "aws_subnet" "subnet_prive_2" {
   }
 }
 
+resource "aws_subnet" "subnet_prive_3" {
+  vpc_id                  = aws_vpc.Drago_ro.id
+  cidr_block              = "10.0.5.0/24"
+  map_public_ip_on_launch = "false"
+  availability_zone       = "${var.aws_region}a"
+
+  tags = {
+    Name = "subnet_prive_3"
+  }
+}
 
 resource "aws_internet_gateway" "gw_Drago_ro" {
   vpc_id = aws_vpc.Drago_ro.id
@@ -73,8 +94,8 @@ resource "aws_internet_gateway" "gw_Drago_ro" {
   }
 }
 
-
-resource "aws_route_table" "public_rt_Draco_ro" {
+#RT POUR SUBNET PUBLIC 1
+resource "aws_route_table" "public1_rt_Draco_ro" {
   vpc_id = aws_vpc.Drago_ro.id
 
   route {
@@ -84,14 +105,30 @@ resource "aws_route_table" "public_rt_Draco_ro" {
 }
 
 resource "aws_route_table_association" "rt_public_ass" {
-  subnet_id      = aws_subnet.subnet_public.id
-  route_table_id = aws_route_table.public_rt_Draco_ro.id
+  subnet_id      = aws_subnet.subnet_public_1.id
+  route_table_id = aws_route_table.public1_rt_Draco_ro.id
 }
 
-resource "aws_network_acl" "nacl_public_Draco_ro" {
-  vpc_id     = aws_vpc.Drago_ro.id
-  subnet_ids = [aws_subnet.subnet_public.id]
+#RT POUR SUBNET PUBLIC 2
+resource "aws_route_table" "public2_rt_Draco_ro" {
+  vpc_id = aws_vpc.Drago_ro.id
 
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw_Drago_ro.id
+  }
+}
+
+resource "aws_route_table_association" "rt_public_ass" {
+  subnet_id      = aws_subnet.subnet_public_2.id
+  route_table_id = aws_route_table.public2_rt_Draco_ro.id
+}
+
+resource "aws_network_acl" "nacl_public2_Draco_ro" {
+  vpc_id     = aws_vpc.Drago_ro.id
+  subnet_ids = [aws_subnet.subnet_public_2.id]
+
+  # HTTPS entrant depuis Internet
   ingress {
     protocol   = "tcp"
     rule_no    = 100
@@ -101,56 +138,188 @@ resource "aws_network_acl" "nacl_public_Draco_ro" {
     to_port    = 443
   }
 
+  # HTTP entrant (si redirection HTTP vers HTTPS)
   ingress {
     protocol   = "tcp"
-    rule_no    = 140
+    rule_no    = 110
     action     = "allow"
     cidr_block = "0.0.0.0/0"
     from_port  = 80
     to_port    = 80
   }
 
+  # Réponses des EC2 privées vers l'ALB
   ingress {
     protocol   = "tcp"
-    rule_no    = 160
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_prive_1.cidr_block
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+  # Réponses vers les clients Internet
+  egress {
+    protocol   = "tcp"
+    rule_no    = 100
     action     = "allow"
     cidr_block = "0.0.0.0/0"
     from_port  = 1024
     to_port    = 65535
   }
 
+  # Trafic vers les EC2 privées
   egress {
-    protocol   = "-1"
-    rule_no    = 100
+    protocol   = "tcp"
+    rule_no    = 110
     action     = "allow"
-    cidr_block = "0.0.0.0/0"
-    from_port  = 0
-    to_port    = 0
+    cidr_block = aws_subnet.subnet_prive_1.cidr_block
+    from_port  = 80
+    to_port    = 80
+  }
+
+  tags = {
+    Name        = "nacl-public-alb-az1"
+    Environment = "production"
   }
 }
 
+resource "aws_network_acl" "nacl_public1_Draco_ro" {
+  vpc_id     = aws_vpc.Drago_ro.id
+  subnet_ids = [aws_subnet.subnet_public_1.id]
+
+  # HTTPS entrant depuis Internet
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  # HTTP entrant (si redirection HTTP vers HTTPS)
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 110
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 80
+    to_port    = 80
+  }
+
+  # Réponses des EC2 privées vers l'ALB
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_prive_1.cidr_block
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+  # Réponses vers les clients Internet
+  egress {
+    protocol   = "tcp"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+  # Trafic vers les EC2 privées
+  egress {
+    protocol   = "tcp"
+    rule_no    = 110
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_prive_1.cidr_block
+    from_port  = 80
+    to_port    = 80
+  }
+
+  tags = {
+    Name        = "nacl-public-alb-az2"
+    Environment = "production"
+  }
+}
 
 resource "aws_network_acl" "nacl_prive1_Draco_ro" {
   vpc_id     = aws_vpc.Drago_ro.id
   subnet_ids = [aws_subnet.subnet_prive_1.id]
 
-  ingress {
+  egress {
     protocol   = "tcp"
     rule_no    = 100
     action     = "allow"
-    cidr_block = "10.0.1.0/24"
+    cidr_block = "10.0.4.0/24"
     from_port  = 3306
     to_port    = 3306
   }
 
   egress {
     protocol   = "tcp"
-    rule_no    = 120
+    rule_no    = 110
     action     = "allow"
-    cidr_block = "10.0.1.0/24"
+    cidr_block = "10.0.5.0/24"
+    from_port  = 3306
+    to_port    = 3306
+  }
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "10.0.4.0/24"
     from_port  = 1024
     to_port    = 65535
   }
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 110
+    action     = "allow"
+    cidr_block = "10.0.5.0/24"
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+ingress {
+  protocol   = "tcp"
+  rule_no    = 120
+  action     = "allow"
+  cidr_block = aws_subnet.subnet_public_1.cidr_block
+  from_port  = 443
+  to_port    = 443
+}
+
+ingress {
+  protocol   = "tcp"
+  rule_no    = 130
+  action     = "allow"
+  cidr_block = aws_subnet.subnet_public_2.cidr_block
+  from_port  = 443
+  to_port    = 443
+}
+
+egress {
+  protocol   = "tcp"
+  rule_no    = 120
+  action     = "allow"
+  cidr_block = aws_subnet.subnet_public_1.cidr_block
+  from_port  = 1024
+  to_port    = 65535
+}
+
+
+egress {
+  protocol   = "tcp"
+  rule_no    = 130
+  action     = "allow"
+  cidr_block = aws_subnet.subnet_public_2.cidr_block
+  from_port  = 1024
+  to_port    = 65535
+}
 }
 
 resource "aws_network_acl" "nacl_prive2_Draco_ro" {
@@ -161,7 +330,7 @@ resource "aws_network_acl" "nacl_prive2_Draco_ro" {
     protocol   = "tcp"
     rule_no    = 100
     action     = "allow"
-    cidr_block = "10.0.1.0/24"
+    cidr_block = "10.0.3.0/24"
     from_port  = 3306
     to_port    = 3306
   }
@@ -170,7 +339,30 @@ resource "aws_network_acl" "nacl_prive2_Draco_ro" {
     protocol   = "tcp"
     rule_no    = 120
     action     = "allow"
-    cidr_block = "10.0.1.0/24"
+    cidr_block = "10.0.3.0/24"
+    from_port  = 1024
+    to_port    = 65535
+  }
+}
+
+resource "aws_network_acl" "nacl_prive3_Draco_ro" {
+  vpc_id     = aws_vpc.Drago_ro.id
+  subnet_ids = [aws_subnet.subnet_prive_3.id]
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "10.0.3.0/24"
+    from_port  = 3306
+    to_port    = 3306
+  }
+
+  egress {
+    protocol   = "tcp"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = "10.0.3.0/24"
     from_port  = 1024
     to_port    = 65535
   }
@@ -185,6 +377,13 @@ resource "aws_security_group" "ec2_Draco_ro" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    protocol        = "tcp"
+    from_port       = 8080
+    to_port         = 8080
+    security_groups = [aws_security_group.lb_sg.id]
   }
 
   ingress {
@@ -240,7 +439,7 @@ data "aws_ami" "amazon_linux" {
 resource "aws_instance" "app" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
-  subnet_id              = aws_subnet.subnet_public.id
+  subnet_id              = aws_subnet.subnet_prive_1.id
   vpc_security_group_ids = [aws_security_group.ec2_Draco_ro.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
 
@@ -377,13 +576,9 @@ echo "=== EC2 initialization finished ==="
 EOF
 }
 
-output "app_public_ip" {
-  value = aws_instance.app.public_ip
-}
-
 
 output "app" {
-  value = "http://${aws_instance.app.public_ip}"
+  value = "http://${aws_lb.alb_Drago_ro.dns_name}"
 }
 
 output "db_endpoint" {
@@ -393,3 +588,9 @@ output "db_endpoint" {
 output "security_group_ec2_id" {
   value = aws_security_group.ec2_Draco_ro.id
 }
+
+output "alb_dns" {
+  description = "DNS name of the appliaction Load Balancer"
+  value       = aws_lb.alb_Drago_ro.dns_name
+}
+

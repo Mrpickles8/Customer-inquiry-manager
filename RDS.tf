@@ -1,6 +1,6 @@
 resource "aws_db_subnet_group" "db_group_Drago_ro" {
   name       = "${var.project_name}-db-subnet"
-  subnet_ids = [aws_subnet.subnet_prive_1.id, aws_subnet.subnet_prive_2.id]
+  subnet_ids = [aws_subnet.subnet_prive_2.id, aws_subnet.subnet_prive_3.id]
 }
 
 
@@ -18,7 +18,7 @@ resource "aws_db_instance" "MySQL" {
   parameter_group_name        = aws_db_parameter_group.force_ssl.name
   skip_final_snapshot         = true
   storage_encrypted           = true
-  backup_retention_period     = 7
+  backup_retention_period     = 1
 }
 
 
