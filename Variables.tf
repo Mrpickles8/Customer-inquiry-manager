@@ -9,14 +9,6 @@ variable "project_name" {
 }
 
 
-variable "db_password" {
-  description = "RDS MySQL password"
-  type        = string
-  sensitive   = true
-
-}
-
-
 variable "db_user" {
   description = "RDS MySQL user"
   type        = string

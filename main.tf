@@ -138,16 +138,16 @@ resource "aws_network_acl" "nacl_prive1_Draco_ro" {
     protocol   = "tcp"
     rule_no    = 100
     action     = "allow"
-    cidr_block = "10.2.0.0/24"
+    cidr_block = "10.0.1.0/24"
     from_port  = 3306
     to_port    = 3306
   }
 
-  ingress {
+  egress {
     protocol   = "tcp"
     rule_no    = 120
     action     = "allow"
-    cidr_block = "10.2.0.0/24"
+    cidr_block = "10.0.1.0/24"
     from_port  = 1024
     to_port    = 65535
   }
@@ -161,16 +161,16 @@ resource "aws_network_acl" "nacl_prive2_Draco_ro" {
     protocol   = "tcp"
     rule_no    = 100
     action     = "allow"
-    cidr_block = "10.3.0.0/24"
+    cidr_block = "10.0.1.0/24"
     from_port  = 3306
     to_port    = 3306
   }
 
-  ingress {
+  egress {
     protocol   = "tcp"
     rule_no    = 120
     action     = "allow"
-    cidr_block = "10.3.0.0/24"
+    cidr_block = "10.0.1.0/24"
     from_port  = 1024
     to_port    = 65535
   }
@@ -179,13 +179,6 @@ resource "aws_network_acl" "nacl_prive2_Draco_ro" {
 
 resource "aws_security_group" "ec2_Draco_ro" {
   vpc_id = aws_vpc.Drago_ro.id
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
     from_port   = 80
@@ -250,7 +243,13 @@ resource "aws_instance" "app" {
   subnet_id              = aws_subnet.subnet_public.id
   vpc_security_group_ids = [aws_security_group.ec2_Draco_ro.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
-  user_data              = <<-EOF
+
+  metadata_options {
+    https_tokens   = "required" #IMDvs2 obligatoire
+    https_endpoint = "enabled"
+  }
+
+  user_data = <<-EOF
 #!/bin/bash
 
 # Enregistrer les logs d'initialisation
@@ -389,4 +388,8 @@ output "app" {
 
 output "db_endpoint" {
   value = aws_db_instance.MySQL.endpoint
+}
+
+output "security_group_ec2_id" {
+  value = aws_security_group.ec2_Draco_ro.id
 }

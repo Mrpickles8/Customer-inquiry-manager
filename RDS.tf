@@ -5,26 +5,29 @@ resource "aws_db_subnet_group" "db_group_Drago_ro" {
 
 
 resource "aws_db_instance" "MySQL" {
-  allocated_storage       = 20
-  backup_retention_period = 1
-  db_subnet_group_name    = aws_db_subnet_group.db_group_Drago_ro.id
-  engine                  = "mysql"
-  engine_version          = "8.0"
-  identifier              = "${var.project_name}-db"
-  instance_class          = "db.t3.micro"
-  password                = var.db_password
-  username                = var.db_user
-  db_name                 = "inventory"
-  vpc_security_group_ids  = [aws_security_group.rds_Draco_ro.id]
-  skip_final_snapshot     = true
-
-
-  storage_encrypted = true
-  kms_key_id        = aws_kms_key.rds_Draco_ro.arn
+  allocated_storage           = 20
+  db_subnet_group_name        = aws_db_subnet_group.db_group_Drago_ro.id
+  engine                      = "mysql"
+  engine_version              = "8.0"
+  identifier                  = "${var.project_name}-db"
+  instance_class              = "db.t3.micro"
+  manage_master_user_password = True
+  username                    = var.db_user
+  db_name                     = "inventory"
+  vpc_security_group_ids      = [aws_security_group.rds_Draco_ro.id]
+  parameter_group_name        = aws_db_parameter_group.force_ssl.name
+  skip_final_snapshot         = true
+  storage_encrypted           = true
+  backup_retention_period     = 7
 }
 
-resource "aws_kms_key" "rds_Draco_ro" {
-  description             = "KMS key for RDS encryption"
-  deletion_window_in_days = 7
-  enable_key_rotation     = true
+
+resource "aws_db_parameter_group" "force_ssl" {
+  name   = "prod-force-ssl"
+  family = "mysql8.0"
+
+  parameter {
+    name  = "require_secure_transport"
+    value = "1" # refuse les connexions non SSL
+  }
 }
