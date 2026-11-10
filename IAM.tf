@@ -39,11 +39,6 @@ resource "aws_iam_role_policy" "ec2_dr_ro" {
           "logs:PutLogEvents"
         ]
         Resource = ["arn:aws:logs:eu-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = [aws_kms_key.rds_Draco_ro.arn]
       }
     ]
   })

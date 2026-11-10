@@ -11,7 +11,7 @@ resource "aws_db_instance" "MySQL" {
   engine_version              = "8.0"
   identifier                  = "${var.project_name}-db"
   instance_class              = "db.t3.micro"
-  manage_master_user_password = True
+  manage_master_user_password = true
   username                    = var.db_user
   db_name                     = "inventory"
   vpc_security_group_ids      = [aws_security_group.rds_Draco_ro.id]

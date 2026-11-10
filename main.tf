@@ -245,8 +245,8 @@ resource "aws_instance" "app" {
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
 
   metadata_options {
-    https_tokens   = "required" #IMDvs2 obligatoire
-    https_endpoint = "enabled"
+  http_endpoint = "enabled"
+  http_tokens   = "required" # IMDSv2 obligatoire
   }
 
   user_data = <<-EOF
