@@ -104,7 +104,7 @@ resource "aws_route_table" "public1_rt_Draco_ro" {
   }
 }
 
-resource "aws_route_table_association" "rt_public_ass" {
+resource "aws_route_table_association" "rt_public_ass1" {
   subnet_id      = aws_subnet.subnet_public_1.id
   route_table_id = aws_route_table.public1_rt_Draco_ro.id
 }
@@ -119,7 +119,7 @@ resource "aws_route_table" "public2_rt_Draco_ro" {
   }
 }
 
-resource "aws_route_table_association" "rt_public_ass" {
+resource "aws_route_table_association" "rt_public_ass2" {
   subnet_id      = aws_subnet.subnet_public_2.id
   route_table_id = aws_route_table.public2_rt_Draco_ro.id
 }
@@ -284,42 +284,42 @@ resource "aws_network_acl" "nacl_prive1_Draco_ro" {
     to_port    = 65535
   }
 
-ingress {
-  protocol   = "tcp"
-  rule_no    = 120
-  action     = "allow"
-  cidr_block = aws_subnet.subnet_public_1.cidr_block
-  from_port  = 443
-  to_port    = 443
-}
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_public_1.cidr_block
+    from_port  = 443
+    to_port    = 443
+  }
 
-ingress {
-  protocol   = "tcp"
-  rule_no    = 130
-  action     = "allow"
-  cidr_block = aws_subnet.subnet_public_2.cidr_block
-  from_port  = 443
-  to_port    = 443
-}
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 130
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_public_2.cidr_block
+    from_port  = 443
+    to_port    = 443
+  }
 
-egress {
-  protocol   = "tcp"
-  rule_no    = 120
-  action     = "allow"
-  cidr_block = aws_subnet.subnet_public_1.cidr_block
-  from_port  = 1024
-  to_port    = 65535
-}
+  egress {
+    protocol   = "tcp"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_public_1.cidr_block
+    from_port  = 1024
+    to_port    = 65535
+  }
 
 
-egress {
-  protocol   = "tcp"
-  rule_no    = 130
-  action     = "allow"
-  cidr_block = aws_subnet.subnet_public_2.cidr_block
-  from_port  = 1024
-  to_port    = 65535
-}
+  egress {
+    protocol   = "tcp"
+    rule_no    = 130
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_public_2.cidr_block
+    from_port  = 1024
+    to_port    = 65535
+  }
 }
 
 resource "aws_network_acl" "nacl_prive2_Draco_ro" {
