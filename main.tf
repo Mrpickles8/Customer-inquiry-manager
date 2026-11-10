@@ -379,12 +379,7 @@ resource "aws_security_group" "ec2_Draco_ro" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    protocol        = "tcp"
-    from_port       = 8080
-    to_port         = 8080
-    security_groups = [aws_security_group.lb_sg.id]
-  }
+
 
   ingress {
     from_port   = 443
@@ -399,6 +394,17 @@ resource "aws_security_group" "ec2_Draco_ro" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+
+resource "aws_security_group_rule" "ec2_Darco_ro_rule" {
+
+  security_group_id        = aws_security_group.ec2_Draco_ro.id
+  type                     = ingress
+  protocol                 = "tcp"
+  from_port                = 8080
+  to_port                  = 8080
+  source_security_group_id = aws_security_group.lb_sg.id
 }
 
 resource "aws_security_group" "rds_Draco_ro" {
