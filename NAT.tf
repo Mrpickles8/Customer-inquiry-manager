@@ -6,7 +6,7 @@ resource "aws_eip" "nat_Drago_ro" {
 resource "aws_nat_gateway" "nat_Drago_ro" {
   allocation_id = aws_eip.nat_Drago_ro.id
   subnet_id     = aws_subnet.subnet_public_1.id
-  depend_on     = [aws_internet_gateway.gw_Drago_ro]
+  depends_on     = [aws_internet_gateway.gw_Drago_ro]
 }
 
 resource "aws_route_table" "prive1_rt_Draco_ro" {
