@@ -503,7 +503,7 @@ resource "aws_security_group_rule" "ec2_to_http" {
 }
 
 #RULE FOR EC2
-resource "aws_security_group_rule" "ec2_to_http" {
+resource "aws_security_group_rule" "ec2_to_https" {
 
   security_group_id = aws_security_group.ec2_Draco_ro.id
   type              = "egress"
