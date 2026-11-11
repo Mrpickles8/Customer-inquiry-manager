@@ -178,6 +178,36 @@ resource "aws_network_acl" "nacl_public2_Draco_ro" {
     to_port    = 80
   }
 
+  # NAT : réponses d'internet vers la NAT
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 130
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+  # NAT : sortie HTTPS vers internet (dnf, pip, SSM, Bedrock)
+  egress {
+    protocol   = "tcp"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  # NAT : sortie HTTP vers internet
+  egress {
+    protocol   = "tcp"
+    rule_no    = 130
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 80
+    to_port    = 80
+  }
+
   tags = {
     Name        = "nacl-public-alb-az1"
     Environment = "production"
@@ -234,6 +264,35 @@ resource "aws_network_acl" "nacl_public1_Draco_ro" {
     rule_no    = 110
     action     = "allow"
     cidr_block = aws_subnet.subnet_prive_1.cidr_block
+    from_port  = 80
+    to_port    = 80
+  }
+  # NAT : réponses d'internet vers la NAT
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 130
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+  # NAT : sortie HTTPS vers internet (dnf, pip, SSM, Bedrock)
+  egress {
+    protocol   = "tcp"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  # NAT : sortie HTTP vers internet
+  egress {
+    protocol   = "tcp"
+    rule_no    = 130
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
     from_port  = 80
     to_port    = 80
   }
@@ -320,6 +379,54 @@ resource "aws_network_acl" "nacl_prive1_Draco_ro" {
     from_port  = 1024
     to_port    = 65535
   }
+
+  # Trafic de l'ALB vers Flask (requêtes et health checks)
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 140
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_public_1.cidr_block
+    from_port  = 8080
+    to_port    = 8080
+  }
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 150
+    action     = "allow"
+    cidr_block = aws_subnet.subnet_public_2.cidr_block
+    from_port  = 8080
+    to_port    = 8080
+  }
+
+  # Réponses d'internet (via la NAT)
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 160
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+  # Sortie vers internet via la NAT (dnf, pip, SSM, Bedrock)
+  egress {
+    protocol   = "tcp"
+    rule_no    = 140
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 443
+    to_port    = 443
+  }
+
+  egress {
+    protocol   = "tcp"
+    rule_no    = 150
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 80
+    to_port    = 80
+  }
 }
 
 resource "aws_network_acl" "nacl_prive2_Draco_ro" {
@@ -371,33 +478,10 @@ resource "aws_network_acl" "nacl_prive3_Draco_ro" {
 
 resource "aws_security_group" "ec2_Draco_ro" {
   vpc_id = aws_vpc.Drago_ro.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
 
-
-resource "aws_security_group_rule" "ec2_Darco_ro_rule" {
+#RULE FOR EC2
+resource "aws_security_group_rule" "alb_to_ec2" {
 
   security_group_id        = aws_security_group.ec2_Draco_ro.id
   type                     = "ingress"
@@ -406,6 +490,42 @@ resource "aws_security_group_rule" "ec2_Darco_ro_rule" {
   to_port                  = 8080
   source_security_group_id = aws_security_group.lb_sg.id
 }
+
+#RULE FOR EC2
+resource "aws_security_group_rule" "ec2_to_http" {
+
+  security_group_id = aws_security_group.ec2_Draco_ro.id
+  type              = "egress"
+  protocol          = "tcp"
+  from_port         = 80
+  to_port           = 80
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+#RULE FOR EC2
+resource "aws_security_group_rule" "ec2_to_http" {
+
+  security_group_id = aws_security_group.ec2_Draco_ro.id
+  type              = "egress"
+  protocol          = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+
+#RULE FOR EC2
+resource "aws_security_group_rule" "ec2_to_rds" {
+
+  security_group_id        = aws_security_group.ec2_Draco_ro.id
+  type                     = "egress"
+  protocol                 = "tcp"
+  from_port                = 3306
+  to_port                  = 3306
+  source_security_group_id = aws_security_group.rds_Draco_ro.id
+}
+
+
 
 resource "aws_security_group" "rds_Draco_ro" {
   vpc_id = aws_vpc.Drago_ro.id
@@ -448,6 +568,7 @@ resource "aws_instance" "app" {
   subnet_id              = aws_subnet.subnet_prive_1.id
   vpc_security_group_ids = [aws_security_group.ec2_Draco_ro.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
+  depends_on             = [aws_route_table_association.rt_prive_ass1, aws_nat_gateway.nat_Drago_ro]
 
   metadata_options {
     http_endpoint = "enabled"
@@ -474,8 +595,8 @@ systemctl enable amazon-ssm-agent
 systemctl restart amazon-ssm-agent
 
 # 2. Installer les dépendances Python
-dnf install -y python3 python3-pip || true
-python3 -m pip install --upgrade pip || true
+dnf install -y python3 python3-pip 
+python3 -m pip install --upgrade pip 
 python3 -m pip install flask boto3 pymysql || true
 
 # 3. Créer l'application Flask

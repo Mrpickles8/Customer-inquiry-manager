@@ -8,7 +8,9 @@ resource "aws_db_instance" "MySQL" {
   allocated_storage           = 20
   db_subnet_group_name        = aws_db_subnet_group.db_group_Drago_ro.id
   engine                      = "mysql"
-  engine_version              = "8.0"
+  engine_version              = "8.4"
+  allow_major_version_upgrade = true
+  apply_immediately           = true
   identifier                  = "${var.project_name}-db"
   instance_class              = "db.t3.micro"
   manage_master_user_password = true
@@ -24,7 +26,7 @@ resource "aws_db_instance" "MySQL" {
 
 resource "aws_db_parameter_group" "force_ssl" {
   name   = "prod-force-ssl"
-  family = "mysql8.0"
+  family = "mysql8.4"
 
   parameter {
     name  = "require_secure_transport"
